@@ -18,6 +18,13 @@ typedef struct elevator{
 	
 }ele_info,*ptr_e;
 
+void PrintCube(int num);
+void PrintSpace(int num);
+void PrintStar(int num);
+void PrintBuilding(ptr_f f,ptr_e e);
+void set(ptr_f f,ptr_e e);
+void MainMenu(ptr_f f,ptr_e e);
+
 void PrintCube(int num){           //打印num个方块 
 	for(int i=0;i<num;i++) 
 		printf("■");
@@ -28,7 +35,7 @@ void PrintSpace(int num){
 		printf("  ");                    
 }
 
-void PrintEle(int num){
+void PrintStar(int num){
 	for(int i=0;i<num;i++) 
 		printf("**"); 
 }
@@ -43,7 +50,7 @@ void PrintBuilding(ptr_f f,ptr_e e){
 	{
 		printf("■");
 		if(i==e->current_pos)           //判断电梯所在的位置 
-			PrintEle(e->capacity);
+			PrintStar(e->capacity);
 		else 
 			PrintSpace(e->capacity);		
 				
@@ -59,26 +66,60 @@ void PrintBuilding(ptr_f f,ptr_e e){
 		}
 		printf("\n");
 		
-	}
-	
+	}	
 	PrintCube(width);    //打印底层 
 	printf("\n");
 	return;
 }
 
+void MainMenu(ptr_f f,ptr_e e){
+	int choice;
+	PrintStar(4);printf("电梯模拟");PrintStar(4);
+	printf("\n");
+	printf("       1、\n       2、设置\n       3、\n       4、\n       0、退出\n");
+	PrintStar(12);
+	printf("    请选择：");
+	scanf("%d",&choice);
+	switch(choice){
+		case(1):break;
+		case(2):set(f,e);break;
+		case(3):break;
+		case(4):break;
+		case(0):break;
+	}
+		
+	return;
+}
+
 void set(ptr_f f,ptr_e e){
+	int choice;
+	system("cls");
+	PrintStar(7);printf("设置");PrintStar(7);
+	printf("\n");
+	printf("请输入楼层数量：");
+	scanf("%d",&(f->num)); 
+	printf("请输入一层楼的高度（一个方格为1）：");
+	scanf("%d",&(f->height));
+	printf("请输入一层楼的宽度（一个方格为1）：");
+	scanf("%d",&(f->capacity));
+	printf("请输入电梯的最大容纳人数：");
+	scanf("%d",&(e->capacity));
+	PrintStar(16);
+	printf("\n"); 
+	printf("设置成功！！！\n"); 
+	/*
 	f->capacity=6;
 	f->height=5;
 	f->num=4;
-	e->capacity=8;
-	e->current_pos=10;
+	e->capacity=8;*/
+	e->current_pos=f->num*f->height;    //默认电梯底层出发 
 	return;
 }
 
 int main(){
 	ptr_f f=(ptr_f)malloc(sizeof(struct floor));
 	ptr_e e=(ptr_e)malloc(sizeof(struct elevator));
-	set(f,e);
+	MainMenu(f,e);	
 	PrintBuilding(f,e);
 	return 0;
 }
