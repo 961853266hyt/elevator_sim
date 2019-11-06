@@ -27,14 +27,16 @@ typedef struct elevator{
 	
 }ele_info,*ptr_e;
 
-void PrintBuild(ptr_f f,ptr_e e);
+ptr_f f;  //楼层信息结构体指针 
+ptr_e e;  //电梯信息结构体指针 
+void PrintBuild();
 void PrintCube(int num);
 void PrintSpace(int num);
 void PrintStar(int num);
-void set(ptr_f f,ptr_e e);
-void MainMenu(ptr_f f,ptr_e e);
-void default_sim(ptr_f f,ptr_e e);
-void PrintBuild(ptr_f f,ptr_e e){
+void set();
+void MainMenu();
+void default_sim();
+void PrintBuild(){
 	int width=3+f->capacity+e->capacity;
 	int height=f->height*f->num+2;
 	if(width>=map_w||height>=map_h)
@@ -59,7 +61,7 @@ void PrintBuild(ptr_f f,ptr_e e){
 		printf("\n");  
 	}
 } 
-void SetMap(ptr_f f,ptr_e e){
+void SetMap(){
 	int i,j;
 	int width=3+f->capacity+e->capacity;
 	for(i=0;i<=f->num*f->height+1;i++)
@@ -99,7 +101,7 @@ void PrintStar(int num){
 		printf("**"); 
 }
 
-void MainMenu(ptr_f f,ptr_e e){
+void MainMenu(){
 	system("cls");
 	int choice;
 	PrintStar(4);printf("电梯模拟");PrintStar(4);
@@ -109,8 +111,8 @@ void MainMenu(ptr_f f,ptr_e e){
 	printf("    请选择：");
 	scanf("%d",&choice);
 	switch(choice){
-		case(1):default_sim(f,e);break;   //默认设置 
-		case(2):set(f,e);break;
+		case(1):default_sim();break;   //默认设置 
+		case(2):set();break;
 		case(3):break;
 		case(4):break;
 		case(0):break;
@@ -118,7 +120,8 @@ void MainMenu(ptr_f f,ptr_e e){
 		
 	return;
 }
-void default_sim(ptr_f f,ptr_e e){
+void default_sim(){
+	system("cls");
 	if(!set_flag)
 	{
 	printf("您还未进行设置，以下为默认设置的模拟\n"); 
@@ -128,11 +131,13 @@ void default_sim(ptr_f f,ptr_e e){
 	f->capacity=6;
 	e->current_pos=f->num*f->height;  //默认设置 
 	}
-	SetMap(f,e);
-	PrintBuild(f,e);
+	SetMap();
+	PrintBuild();
+	system("pause");
+	MainMenu();
 	return;
 } 
-void set(ptr_f f,ptr_e e){
+void set(){
 	int choice;
 	system("cls");
 	PrintStar(7);printf("设置");PrintStar(7);
@@ -147,18 +152,18 @@ void set(ptr_f f,ptr_e e){
 	scanf("%d",&(e->capacity));
 	e->current_pos=f->num*f->height;   //默认电梯从底层出发 
 	PrintStar(16);
-	SetMap(f,e);
+	SetMap();
 	printf("\n"); 
 	printf("设置成功！！！\n"); 
 	set_flag=1;
 	system("pause");
-	MainMenu(f,e);
+	MainMenu();
 	return;
 }
 
 int main(){
-	ptr_f f=(ptr_f)malloc(sizeof(struct floor));
-	ptr_e e=(ptr_e)malloc(sizeof(struct elevator));
-	MainMenu(f,e);	
+	f=(ptr_f)malloc(sizeof(struct floor));
+	e=(ptr_e)malloc(sizeof(struct elevator));
+	MainMenu();	
 	return 0;
 }
