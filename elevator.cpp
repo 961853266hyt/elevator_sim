@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h> 
 #include<math.h>
+#include<time.h>
 #define downwards 0
 #define upwards 1
 
@@ -8,35 +9,66 @@
 #define pass 1
 #define ele  2
 #define person 3
-#define map_w 300
-#define map_h 300
+#define map_w 100
+#define map_h 100
 int Map[map_w][map_h];    //存放每个格子需打印的类型，wall，pass,etc. 
-int set_flag=0;            //判断是否进行过自定义设置 
+int set_flag=0;           //判断是否进行过自定义设置 
+int clk=0;                //电梯运行计时器 
+
+
+typedef struct floor_list{      //每个楼层对应一个线性表数组，						 
+	int *elem;			        //其中的elem存放该楼层人的信息 
+	int current_num;          //当前楼层人数 
+}*info,List;      
+  
 typedef struct floor{
 	int height;     	//楼层高度 
 	int capacity;   	//楼层最多容纳的人数 
 	int num;        	//楼层数量 
 	int current_floor;  //当前楼层 
+	info L;             //线性表数组的头指针 
 	
-}floor_info,*ptr_f;
+}floor_info,*ptr_f;   
 
 typedef struct elevator{
 	int capacity;   	//电梯最多容纳人数 
 	int direction;  	//运行的方向  downwards或upwards 
-	int current_pos;	//当前纵坐标 
-	
+	int current_pos;	//当前纵坐标
+	int current_num;  //当前电梯人数 
+	int* elem;          //引入线性表存储电梯中的人的信息，表中的值代表想去的楼层数 
 }ele_info,*ptr_e;
 
 ptr_f f;  //楼层信息结构体指针 
-ptr_e e;  //电梯信息结构体指针 
+ptr_e e;  //电梯信息结构体指针
+int RandNum(int min,int max);
 void PrintBuild();
 void PrintCube(int num);
 void PrintSpace(int num);
 void PrintStar(int num);
 void set();
 void MainMenu();
-void default_sim();
+void DefaultSim();
+int RandNum(int min,int max){           //生成min<=x<=max的随机数
+	srand((unsigned)time(NULL));
+    int result = rand()%(max-min+1)+min;
+	return result;
+}
+void PeopleSim(){
+	for(int i=0;i<f->num;i++)
+	{
+		f->L[i].current_num=RandNum(0,f->capacity);         //生成该层正在等候的人数
+		for(int j=0;j<f->L[i].current_num;j++)
+		{                 //随机生成各自想要去的楼层
+			f->L[i].elem=(int*)malloc(f->capacity*sizeof(int)); //对elem线性表初始化
+			f->L[i].elem[j]=RandNum(1,f->num-1);
+			Map[(f->num-i)*f->height][e->capacity+2+j]=person;          //在图上标式这是个活人
+			Map[(f->num-i)*f->height-1][e->capacity+2+j]=-(f->L[i].elem[j]); //这个人上方的位置 用负数的绝对值显示想去的楼层
+		}
+	}
+	return;
+}
 void PrintBuild(){
+	PeopleSim();
 	int width=3+f->capacity+e->capacity;
 	int height=f->height*f->num+2;
 	if(width>=map_w||height>=map_h)
@@ -111,7 +143,7 @@ void MainMenu(){
 	printf("    请选择：");
 	scanf("%d",&choice);
 	switch(choice){
-		case(1):default_sim();break;   //默认设置 
+		case(1):DefaultSim();break;   //默认设置 
 		case(2):set();break;
 		case(3):break;
 		case(4):break;
@@ -120,7 +152,20 @@ void MainMenu(){
 		
 	return;
 }
-void default_sim(){
+
+void ElePosChange(){
+	if(e->direction==downwards)
+	{
+		e->current_pos++;	
+	}
+	else
+	{
+		e->current_pos--;
+	}
+	return;
+}
+
+void DefaultSim(){
 	system("cls");
 	if(!set_flag)
 	{
@@ -150,7 +195,15 @@ void set(){
 	scanf("%d",&(f->capacity));
 	printf("请输入电梯的最大容纳人数：");
 	scanf("%d",&(e->capacity));
+	/* 
+	e->L=CreatList(e->capacity);
+	f->L=CreatList(f->capacity);      //线性表初始化 
+	*/ 
+
+	f->L=(info)malloc(f->num*sizeof(struct floor_list));                        	//结构体数组初始化 
+	
 	e->current_pos=f->num*f->height;   //默认电梯从底层出发 
+	e->direction=upwards;
 	PrintStar(16);
 	SetMap();
 	printf("\n"); 
@@ -162,8 +215,9 @@ void set(){
 }
 
 int main(){
-	f=(ptr_f)malloc(sizeof(struct floor));
+	f=(ptr_f)malloc(sizeof(struct floor));      //结构体初始化 
 	e=(ptr_e)malloc(sizeof(struct elevator));
+
 	MainMenu();	
 	return 0;
 }
