@@ -5,10 +5,11 @@
 #define downwards 0
 #define upwards 1
 
-#define wall 0
-#define pass 1
-#define ele  2
-#define person 3
+#define wall 1 
+#define pass 2 
+#define ele  3 
+#define person 4 
+#define max_floor 20
 #define map_w 100
 #define map_h 100
 int Map[map_w][map_h];    //存放每个格子需打印的类型，wall，pass,etc. 
@@ -26,7 +27,7 @@ typedef struct floor{
 	int capacity;   	//楼层最多容纳的人数 
 	int num;        	//楼层数量 
 	int current_floor;  //当前楼层 
-	info L;             //线性表数组的头指针 
+	List L[max_floor];             //线性表数组 
 	
 }floor_info,*ptr_f;   
 
@@ -49,7 +50,6 @@ void set();
 void MainMenu();
 void DefaultSim();
 int RandNum(int min,int max){           //生成min<=x<=max的随机数
-	srand((unsigned)time(NULL));
     int result = rand()%(max-min+1)+min;
 	return result;
 }
@@ -60,9 +60,11 @@ void PeopleSim(){
 		for(int j=0;j<f->L[i].current_num;j++)
 		{                 //随机生成各自想要去的楼层
 			f->L[i].elem=(int*)malloc(f->capacity*sizeof(int)); //对elem线性表初始化
-			f->L[i].elem[j]=RandNum(1,f->num-1);
-			Map[(f->num-i)*f->height][e->capacity+2+j]=person;          //在图上标式这是个活人
-			Map[(f->num-i)*f->height-1][e->capacity+2+j]=-(f->L[i].elem[j]); //这个人上方的位置 用负数的绝对值显示想去的楼层
+			while((f->L[i].elem[j]=RandNum(0,f->num-1))==i){    //如果想要去的是当前楼层，则重新生成 
+				;
+			} 
+			Map[(f->num-i)*f->height-1][e->capacity+2+j]=person;          //在图上标式这是个活人
+			Map[(f->num-i)*f->height-2][e->capacity+2+j]=-(f->L[i].elem[j]); //这个人上方的位置 用负数的绝对值显示想去的楼层
 		}
 	}
 	return;
@@ -86,7 +88,7 @@ void PrintBuild(){
 				case(pass):printf("  ");break;
 				case(ele): printf("**");break;
 				case(person):printf("★");break;
-				default:printf("%d",abs(Map[i][j]));break;   //用负数绝对值代表每个人要去的楼层数 
+				default:printf("%d ",abs(Map[i][j]));break;   //用负数绝对值代表每个人要去的楼层数 
 			}                  
 		}
 		printf("%d",i);
@@ -195,13 +197,6 @@ void set(){
 	scanf("%d",&(f->capacity));
 	printf("请输入电梯的最大容纳人数：");
 	scanf("%d",&(e->capacity));
-	/* 
-	e->L=CreatList(e->capacity);
-	f->L=CreatList(f->capacity);      //线性表初始化 
-	*/ 
-
-	f->L=(info)malloc(f->num*sizeof(struct floor_list));                        	//结构体数组初始化 
-	
 	e->current_pos=f->num*f->height;   //默认电梯从底层出发 
 	e->direction=upwards;
 	PrintStar(16);
@@ -215,9 +210,9 @@ void set(){
 }
 
 int main(){
+	srand((unsigned)time(NULL));
 	f=(ptr_f)malloc(sizeof(struct floor));      //结构体初始化 
 	e=(ptr_e)malloc(sizeof(struct elevator));
-
 	MainMenu();	
 	return 0;
 }
