@@ -13,6 +13,7 @@
 #define ele  6 
 #define person 7 
 #define max_floor 20      //最多有几层楼
+#define empty -100        //代表电梯中该位置为空
 #define map_w 100
 #define map_h 100
 #define sleeptime 500     //运行一次间隔时间ms
@@ -33,7 +34,6 @@ typedef struct floor{
 	List L[max_floor];             //线性表数组 
 	
 }floor_info,*ptr_f;   
-
 typedef struct elevator{
 	int capacity;   	//电梯最多容纳人数 
 	int direction;  	//运行的方向  downwards或upwards 
@@ -59,6 +59,9 @@ void SetMap();
 void ElePosChange();
 void PeopleSim();
 void SetEle();         //在二维数组中设定电梯的位置 
+void PeopleIn();
+void PeopleOut();
+void PeopleChange();
 int RandNum(int min,int max){           //生成min<=x<=max的随机数
     int result = rand()%(max-min+1)+min;
 	return result;
@@ -71,14 +74,14 @@ void EleRun(){
 		{
 			PeopleSim(); 
 		 	e->direction=upwards;
+			e->current_num=0;	
+			
 		}
 		e->current_floor=GetFloor(e->current_pos);
 		if(e->current_pos%f->height==0)
 		{  				//达到某一层
 			e->door_status=open;
-			/*
 			PeopleChange();  //人员进出
-			*/ 
 		}
 		else{
 			e->door_status=close;
@@ -94,21 +97,59 @@ int IsDoorOpen(){             //判断开门的条件
 	if(e->current_pos%f->height==0&&) return 1;
 	return 0;
 }
-/*
-void PeopleChange(){
+*/
+void PeopleChange(){              //控制电梯内人员流动，先出后进
 
-
-
-
-
-
-
-
-
+	PeopleIn();
+	PeopleOut();
 
 	return;
 }
-*/
+void PeopleOut(){
+	int i,j;
+	for(i=0;i<e->capacity;i++)			//遍历电梯里的每个人
+	{
+		if(e->elem[i]==e->current_floor)   //如果这个人想去的楼层是当前层，则出去
+		{
+			e->elem[i]=empty;                     //数组中的empty即-100代表已经出去，该位置可以进来人
+			e->current_num--;                    //电梯人数减一
+			Map[e->current_pos-1][i+1]=pass;     //清楚map中的人和对应显示的楼层
+			Map[e->current_pos-2][i+1]=pass;
+		}
+	}
+
+	return;
+}
+void PeopleIn(){
+	int i=0,j;
+	int leftnum=e->capacity-e->current_num;
+	int n=e->current_floor;
+	while(leftnum>0&&i<f->capacity)
+	{	    
+		if(f->L[n].elem[i]>e->current_floor&&e->direction==upwards||f->L[n].elem[i]<e->current_floor&&e->direction==downwards)   //判断是否满足进电梯的条件         
+		{
+			for(j=0;j<e->capacity;j++)          //在电梯中找到应该进去的位置
+			{
+				if(e->elem[j]==empty)
+				{
+					e->elem[j]=f->L[n].elem[i];
+					f->L[n].elem[i]=empty;
+					e->current_num++;
+					(f->L[n].current_num)--;       //该楼层当前人数减一
+					Map[e->current_pos-1][j+1]=person;            //在数组中标识人和他想去的楼层
+					Map[e->current_pos-2][j+1]=-(e->elem[j]);
+					Map[e->current_pos-1][e->capacity+2+i]=pass;          	//清除他在等待队列中的位置和想去楼层
+					Map[e->current_pos-2][e->capacity+2+i]=pass; 
+					break;
+				}
+			}
+		}
+		leftnum=e->capacity-e->current_num;    
+		i++;
+	}
+	return;
+}
+
 int GetFloor(int i){              //将给定纵坐标转化成楼层  最底层为0层
 	int floor=f->num-((i-1)/f->height)-1;
 	return floor;
@@ -117,14 +158,22 @@ void PeopleSim(){
 	for(int i=0;i<f->num;i++)
 	{
 		f->L[i].current_num=RandNum(0,f->capacity);         //生成该层正在等候的人数
-		for(int j=0;j<f->L[i].current_num;j++)
+		for(int j=0;j<f->capacity;j++)
 		{                 //随机生成各自想要去的楼层
 			f->L[i].elem=(int*)malloc(f->capacity*sizeof(int)); //对elem线性表初始化
-			while((f->L[i].elem[j]=RandNum(0,f->num-1))==i){    //如果想要去的是当前楼层，则重新生成 
-				;
-			} 
-			Map[(f->num-i)*f->height-1][e->capacity+2+j]=person;          	//在图上标识这是个活人
-			Map[(f->num-i)*f->height-2][e->capacity+2+j]=-(f->L[i].elem[j]); //这个人上方的位置 用负数的绝对值显示想去的楼层
+			if(j<f->L[i].current_num)
+			{
+				while((f->L[i].elem[j]=RandNum(0,f->num-1))==i)
+				{    //如果想要去的是当前楼层，则重新生成 
+					;
+				} 
+				Map[(f->num-i)*f->height-1][e->capacity+2+j]=person;          	//在图上标识这是个活人
+				Map[(f->num-i)*f->height-2][e->capacity+2+j]=-(f->L[i].elem[j]); //这个人上方的位置 用负数的绝对值显示想去的楼层	
+			}
+			else
+			{
+				f->L[i].elem[j]=empty;
+			}
 		}
 	}
 	return;
@@ -147,6 +196,7 @@ void PrintBuild(){
 				case(pass):printf("  ");break;
 				case(ele): printf("**");break;
 				case(person):printf("★");break;
+				case(empty):printf("  ");break;
 				default:printf("%d ",abs(Map[i][j]));break;   //用负数绝对值代表每个人要去的楼层数 
 			}                  
 		}
@@ -155,6 +205,10 @@ void PrintBuild(){
 	}
 	printf("当前已运行%d秒...\n",clk);
 	printf("电梯正在第%d层\n",e->current_floor);
+	/*
+	for(int i=0;i<e->capacity;i++)
+	printf("%d ",e->elem[i]);
+    */
 	Sleep(500);
 	system("cls");
 } 
@@ -180,13 +234,14 @@ void SetMap(){            //map初始化
 		}
 	}
 
-	
 	return;
 }
-void SetEle(){
-	for(int j=1;j<=e->capacity;j++)  //电梯的位置 
+void SetEle(){                       //初始化电梯
+	e->elem=(int*)malloc(e->capacity*sizeof(int));
+	for(int j=1;j<=e->capacity;j++)  
 	{          
-		Map[e->current_pos][j]=ele; 
+		e->elem[j-1]=empty;
+		Map[e->current_pos][j]=ele; //电梯的位置 
 	}
 	return;
 } 
@@ -225,24 +280,37 @@ void MainMenu(){
 	return;
 }
 
-void ElePosChange(){    //根据运行 方向改变电梯位置
-	int j;
+void ElePosChange(){    //根据运行 方向改变电梯、人、楼层显示的位置
+	int i,j;
+	
 	if(e->direction==downwards)
 	{
 		e->current_pos++;	
 		for(j=1;j<=e->capacity;j++)  
-		{	          
+		{	
 			Map[e->current_pos][j]=ele;      //确定电梯的位置 
-			Map[e->current_pos-1][j]=pass;   //消除上次电梯 
+			if(e->elem[j-1]!=empty)          //如果这格电梯上站着人
+			{
+				Map[e->current_pos-1][j]=Map[e->current_pos-2][j];   //人和楼层显示往下挪
+				Map[e->current_pos-2][j]=Map[e->current_pos-3][j];
+			}
+			else
+				Map[e->current_pos-1][j]=pass;   //如果没站人，则需消除上次电梯 
+		
 		}
 	}
-	else
+	else          //电梯上升
 	{
 		e->current_pos--;
 		for(j=1;j<=e->capacity;j++)  
-		{          
+		{   
+			if(e->elem[j-1]>=0)          //如果这格电梯上站着人
+			{
+				Map[e->current_pos-2][j]=Map[e->current_pos-1][j];   //人和楼层显示往上挪
+				Map[e->current_pos-1][j]=Map[e->current_pos][j];
+			}
+			Map[e->current_pos+1][j]=pass;   //消除上次电梯 
 			Map[e->current_pos][j]=ele; 
-			Map[e->current_pos+1][j]=pass; 
 		}
 	}
 	if(e->current_pos==f->height*f->num&&e->direction==downwards||e->current_pos==f->height&&e->direction==upwards)
