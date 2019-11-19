@@ -47,6 +47,7 @@ typedef struct elevator{
 ptr_f f;  //楼层信息结构体指针 
 ptr_e e;  //电梯信息结构体指针
 int RandNum(int min,int max);
+int GetFloor(int i);
 void PrintBuild();
 void PrintCube(int num);
 void PrintSpace(int num);
@@ -55,20 +56,23 @@ void Set();
 void MainMenu();
 void DefaultSim();
 void SetMap(); 
-int GetFloor(int i);
 void ElePosChange();
 void PeopleSim();
+void SetEle();         //在二维数组中设定电梯的位置 
 int RandNum(int min,int max){           //生成min<=x<=max的随机数
     int result = rand()%(max-min+1)+min;
 	return result;
 }
 void EleRun(){
+	SetMap();
+	SetEle();                      //楼层电梯初始化 
 	while(1){
-		SetMap();
-		if(clk==0) PeopleSim(); 
-		if(clk==0) e->direction=upwards;
+		if(clk==0)                 //楼层信息初始化
+		{
+			PeopleSim(); 
+		 	e->direction=upwards;
+		}
 		e->current_floor=GetFloor(e->current_pos);
-		
 		if(e->current_pos%f->height==0)
 		{  				//达到某一层
 			e->door_status=open;
@@ -76,11 +80,19 @@ void EleRun(){
 			PeopleChange();  //人员进出
 			*/ 
 		}
+		else{
+			e->door_status=close;
+		} 
 		PrintBuild();
 		clk++;
 		ElePosChange();//根据运行方向改变电梯位置
 	}
 	return;
+}
+/*
+int IsDoorOpen(){             //判断开门的条件
+	if(e->current_pos%f->height==0&&) return 1;
+	return 0;
 }
 /*
 void PeopleChange(){
@@ -146,7 +158,8 @@ void PrintBuild(){
 	Sleep(500);
 	system("cls");
 } 
-void SetMap(){
+
+void SetMap(){            //map初始化
 	int i,j;
 	int width=3+f->capacity+e->capacity;
 	for(i=0;i<=f->num*f->height+1;i++)
@@ -158,22 +171,25 @@ void SetMap(){
 			{
 				Map[i][j]=wall;	
 			}
-			else
+			else 
 			{
 				Map[i][j]=pass;
 			}
-			if(i==e->current_pos&&j>0&&j<=e->capacity)   //电梯当前位置 
-			{
-				Map[i][j]=ele;
-			}		
-			if((GetFloor(i)==e->current_floor)&&(i%f->height!=0)&&(e->door_status==open)&&(j==e->capacity+1))     //控制电梯门的开关
-			{
-				Map[i][j]=pass;
-			}
+		
+
 		}
 	}
+
+	
 	return;
 }
+void SetEle(){
+	for(int j=1;j<=e->capacity;j++)  //电梯的位置 
+	{          
+		Map[e->current_pos][j]=ele; 
+	}
+	return;
+} 
 
 void PrintCube(int num){           //打印num个方块 
 	for(int i=0;i<num;i++) 
@@ -210,19 +226,35 @@ void MainMenu(){
 }
 
 void ElePosChange(){    //根据运行 方向改变电梯位置
-
+	int j;
 	if(e->direction==downwards)
 	{
 		e->current_pos++;	
+		for(j=1;j<=e->capacity;j++)  
+		{	          
+			Map[e->current_pos][j]=ele;      //确定电梯的位置 
+			Map[e->current_pos-1][j]=pass;   //消除上次电梯 
+		}
 	}
 	else
 	{
 		e->current_pos--;
+		for(j=1;j<=e->capacity;j++)  
+		{          
+			Map[e->current_pos][j]=ele; 
+			Map[e->current_pos+1][j]=pass; 
+		}
 	}
 	if(e->current_pos==f->height*f->num&&e->direction==downwards||e->current_pos==f->height&&e->direction==upwards)
 	{
 		e->direction=!(e->direction);
 	}
+	/* 
+	if((GetFloor(i)==e->current_floor)&&(i%f->height!=0)&&(e->door_status==open)&&(j==e->capacity+1))     //控制电梯门的开关
+	{
+		Map[i][j]=pass;
+	}
+	*/ 
 	return;
 }
 
@@ -263,6 +295,7 @@ void Set(){
 	e->direction=upwards;
 	PrintStar(16);
 	SetMap();
+	SetEle();
 	printf("\n"); 
 	printf("设置成功！！！\n"); 
 	set_flag=1;
