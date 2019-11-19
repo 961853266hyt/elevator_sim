@@ -13,7 +13,7 @@
 #define ele  6 
 #define person 7 
 #define max_floor 20      //最多有几层楼
-#define empty -100        //代表电梯中该位置为空
+#define empty -99        //代表电梯中该位置为空
 #define map_w 100
 #define map_h 100
 #define sleeptime 500     //运行一次间隔时间ms
@@ -83,7 +83,8 @@ void EleRun(){
 			e->door_status=open;
 			PeopleChange();  //人员进出
 		}
-		else{
+		else
+		{
 			e->door_status=close;
 		} 
 		PrintBuild();
@@ -100,8 +101,8 @@ int IsDoorOpen(){             //判断开门的条件
 */
 void PeopleChange(){              //控制电梯内人员流动，先出后进
 
-	PeopleIn();
 	PeopleOut();
+	PeopleIn();
 
 	return;
 }
@@ -111,7 +112,7 @@ void PeopleOut(){
 	{
 		if(e->elem[i]==e->current_floor)   //如果这个人想去的楼层是当前层，则出去
 		{
-			e->elem[i]=empty;                     //数组中的empty即-100代表已经出去，该位置可以进来人
+			e->elem[i]=empty;                     //数组中的empty即-99代表已经出去，该位置可以进来人
 			e->current_num--;                    //电梯人数减一
 			Map[e->current_pos-1][i+1]=pass;     //清楚map中的人和对应显示的楼层
 			Map[e->current_pos-2][i+1]=pass;
@@ -158,9 +159,9 @@ void PeopleSim(){
 	for(int i=0;i<f->num;i++)
 	{
 		f->L[i].current_num=RandNum(0,f->capacity);         //生成该层正在等候的人数
+		f->L[i].elem=(int*)malloc(f->capacity*sizeof(int)); //对elem线性表初始化
 		for(int j=0;j<f->capacity;j++)
 		{                 //随机生成各自想要去的楼层
-			f->L[i].elem=(int*)malloc(f->capacity*sizeof(int)); //对elem线性表初始化
 			if(j<f->L[i].current_num)
 			{
 				while((f->L[i].elem[j]=RandNum(0,f->num-1))==i)
@@ -191,12 +192,12 @@ void PrintBuild(){
 		for(int j=0;j<width;j++)
 		{
 			switch(Map[i][j])
-			{
+			{	
+				case(empty):printf("  ");break;
 				case(wall):printf("■");break;
 				case(pass):printf("  ");break;
 				case(ele): printf("**");break;
 				case(person):printf("★");break;
-				case(empty):printf("  ");break;
 				default:printf("%d ",abs(Map[i][j]));break;   //用负数绝对值代表每个人要去的楼层数 
 			}                  
 		}
@@ -282,8 +283,7 @@ void MainMenu(){
 
 void ElePosChange(){    //根据运行 方向改变电梯、人、楼层显示的位置
 	int i,j;
-	
-	if(e->direction==downwards)
+	if(e->direction==downwards)  //考虑电梯下降的情况
 	{
 		e->current_pos++;	
 		for(j=1;j<=e->capacity;j++)  
@@ -293,6 +293,7 @@ void ElePosChange(){    //根据运行 方向改变电梯、人、楼层显示的位置
 			{
 				Map[e->current_pos-1][j]=Map[e->current_pos-2][j];   //人和楼层显示往下挪
 				Map[e->current_pos-2][j]=Map[e->current_pos-3][j];
+				Map[e->current_pos-3][j]=pass;
 			}
 			else
 				Map[e->current_pos-1][j]=pass;   //如果没站人，则需消除上次电梯 
@@ -362,8 +363,6 @@ void Set(){
 	e->current_pos=f->num*f->height;   //默认电梯从底层出发 
 	e->direction=upwards;
 	PrintStar(16);
-	SetMap();
-	SetEle();
 	printf("\n"); 
 	printf("设置成功！！！\n"); 
 	set_flag=1;
