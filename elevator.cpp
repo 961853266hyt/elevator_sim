@@ -62,9 +62,17 @@ void SetEle();         //在二维数组中设定电梯的位置
 void PeopleIn();
 void PeopleOut();
 void PeopleChange();
+int IsBuildingEmpty();
 int RandNum(int min,int max){           //生成min<=x<=max的随机数
     int result = rand()%(max-min+1)+min;
 	return result;
+}
+int IsBuildingEmpty(){             //判断建筑物有没有人
+	for(int i=0;i<f->num;i++)
+	{
+		if(f->L[i].current_num!=0) return 0;
+	}
+	return 1;
 }
 void EleRun(){
 	SetMap();
@@ -75,7 +83,10 @@ void EleRun(){
 			PeopleSim(); 
 		 	e->direction=upwards;
 			e->current_num=0;	
-			
+		}
+		else if(IsBuildingEmpty())
+		{
+			PeopleSim(); 
 		}
 		e->current_floor=GetFloor(e->current_pos);
 		if(e->current_pos%f->height==0)
@@ -131,7 +142,7 @@ void PeopleIn(){
 		{
 			for(j=0;j<e->capacity;j++)          //在电梯中找到应该进去的位置
 			{
-				if(e->elem[j]==empty)
+				if(e->elem[j]==empty&&f->L[n].elem[i]!=empty)
 				{
 					e->elem[j]=f->L[n].elem[i];
 					f->L[n].elem[i]=empty;
