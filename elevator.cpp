@@ -21,10 +21,9 @@ int Map[map_w][map_h];    //存放每个格子需打印的类型，wall，pass,etc.
 int set_flag=0;           //判断是否进行过自定义设置 
 int clk=0;                //电梯运行计时器 
 
-
 typedef struct floor_list{      //每个楼层对应一个线性表数组，						 
 	int *elem;			        //其中的elem存放该楼层人的信息 
-	int current_num;          //当前楼层人数 
+	int current_num;            //当前楼层人数 
 }*info,List;      
   
 typedef struct floor{
@@ -34,6 +33,7 @@ typedef struct floor{
 	List L[max_floor];             //线性表数组 
 	
 }floor_info,*ptr_f;   
+
 typedef struct elevator{
 	int capacity;   	//电梯最多容纳人数 
 	int direction;  	//运行的方向  downwards或upwards 
@@ -63,10 +63,34 @@ void PeopleIn();
 void PeopleOut();
 void PeopleChange();
 int IsBuildingEmpty();
+int IsDoorOpen();
+
+void ChangeDoor()
+{
+	if(e->door_status==open)
+	{	
+		for(int i=1;i<=f->height-1;i++)
+		{
+			Map[(f->num-e->current_floor-1)*f->height+i][e->capacity+1]=pass;   //电梯开门 
+		}
+	}
+	else
+	{	
+		for(int j=1;j<=f->height-1;j++)
+		{	if(e->direction==upwards){
+			    Map[(f->num-e->current_floor-1)*f->height+j][e->capacity+1]=wall;
+			}
+			else
+				Map[(f->num-e->current_floor-2)*f->height+j][e->capacity+1]=wall;
+		}
+	}
+	return;
+}
 int RandNum(int min,int max){           //生成min<=x<=max的随机数
     int result = rand()%(max-min+1)+min;
 	return result;
 }
+
 int IsBuildingEmpty(){             //判断建筑物有没有人
 	for(int i=0;i<f->num;i++)
 	{
@@ -74,6 +98,7 @@ int IsBuildingEmpty(){             //判断建筑物有没有人
 	}
 	return 1;
 }
+
 void EleRun(){
 	SetMap();
 	SetEle();                      //楼层电梯初始化 
@@ -89,49 +114,69 @@ void EleRun(){
 			PeopleSim(); 
 		}
 		e->current_floor=GetFloor(e->current_pos);
-		if(e->current_pos%f->height==0)
-		{  				//达到某一层
+		if(IsDoorOpen())
+		{
 			e->door_status=open;
 			PeopleChange();  //人员进出
 		}
-		else
-		{
-			e->door_status=close;
-		} 
+		else e->door_status=close;
+		ChangeDoor();
 		PrintBuild();
 		clk++;
 		ElePosChange();//根据运行方向改变电梯位置
 	}
 	return;
 }
-/*
-int IsDoorOpen(){             //判断开门的条件
-	if(e->current_pos%f->height==0&&) return 1;
+
+int IsDoorOpen(){             //判断是否需要开门
+	int n=e->current_floor;
+	if(e->current_num==0&&f->L[n].current_num==0) return 0;   //电梯里和等候区都没人 无需开门 
+	if(e->current_pos%f->height==0)               //电梯到达需要开门的位置 
+	{	
+		for(int k=0;k<e->capacity;k++)
+		{
+			if(e->elem[k]==n) return 1;          //如果电梯中有人想在本楼层下  
+		}
+		if(e->direction==downwards)
+		{
+			for(int i=0;i<f->capacity;i++)
+			{
+				if(f->L[n].elem[i]<n) return 1;   //电梯下去时，想去楼层小于本楼层的人进电梯 
+			}
+		}
+		else
+		{
+			for(int j=0;j<f->capacity;j++)
+			{
+				if(f->L[n].elem[j]>n) return 1;
+			}
+		}
+	}
 	return 0;
 }
-*/
-void PeopleChange(){              //控制电梯内人员流动，先出后进
 
+void PeopleChange()
+{              //控制电梯内人员流动，先出后进
 	PeopleOut();
 	PeopleIn();
-
 	return;
 }
+
 void PeopleOut(){
 	int i,j;
 	for(i=0;i<e->capacity;i++)			//遍历电梯里的每个人
 	{
 		if(e->elem[i]==e->current_floor)   //如果这个人想去的楼层是当前层，则出去
 		{
-			e->elem[i]=empty;                     //数组中的empty即-99代表已经出去，该位置可以进来人
+			e->elem[i]=empty;                    //数组中的empty即-99代表已经出去，该位置可以进来人
 			e->current_num--;                    //电梯人数减一
 			Map[e->current_pos-1][i+1]=pass;     //清楚map中的人和对应显示的楼层
 			Map[e->current_pos-2][i+1]=pass;
 		}
 	}
-
 	return;
 }
+
 void PeopleIn(){
 	int i=0,j;
 	int leftnum=e->capacity-e->current_num;
@@ -140,17 +185,17 @@ void PeopleIn(){
 	{	    
 		if(f->L[n].elem[i]>e->current_floor&&e->direction==upwards||f->L[n].elem[i]<e->current_floor&&e->direction==downwards)   //判断是否满足进电梯的条件         
 		{
-			for(j=0;j<e->capacity;j++)          //在电梯中找到应该进去的位置
+			for(j=0;j<e->capacity;j++)          				//在电梯中找到应该进去的位置
 			{
 				if(e->elem[j]==empty&&f->L[n].elem[i]!=empty)
 				{
 					e->elem[j]=f->L[n].elem[i];
 					f->L[n].elem[i]=empty;
 					e->current_num++;
-					(f->L[n].current_num)--;       //该楼层当前人数减一
+					(f->L[n].current_num)--;       				  //该楼层当前人数减一
 					Map[e->current_pos-1][j+1]=person;            //在数组中标识人和他想去的楼层
 					Map[e->current_pos-2][j+1]=-(e->elem[j]);
-					Map[e->current_pos-1][e->capacity+2+i]=pass;          	//清除他在等待队列中的位置和想去楼层
+					Map[e->current_pos-1][e->capacity+2+i]=pass;  //清除他在等待队列中的位置和想去楼层
 					Map[e->current_pos-2][e->capacity+2+i]=pass; 
 					break;
 				}
@@ -166,6 +211,7 @@ int GetFloor(int i){              //将给定纵坐标转化成楼层  最底层为0层
 	int floor=f->num-((i-1)/f->height)-1;
 	return floor;
 }
+
 void PeopleSim(){
 	for(int i=0;i<f->num;i++)
 	{
@@ -190,6 +236,7 @@ void PeopleSim(){
 	}
 	return;
 }
+
 void PrintBuild(){
 	int width=3+f->capacity+e->capacity;
 	int height=f->height*f->num+2;
@@ -217,10 +264,6 @@ void PrintBuild(){
 	}
 	printf("当前已运行%d秒...\n",clk);
 	printf("电梯正在第%d层\n",e->current_floor);
-	/*
-	for(int i=0;i<e->capacity;i++)
-	printf("%d ",e->elem[i]);
-    */
 	Sleep(500);
 	system("cls");
 } 
@@ -232,7 +275,6 @@ void SetMap(){            //map初始化
 	{	 
 		for(j=0;j<width;j++)
 		{	
-		
 			if(i==0||i==f->num*f->height+1||j==0||j==e->capacity+1||j==width-1||(i%f->height==0&&j>e->capacity))
 			{
 				Map[i][j]=wall;	
@@ -241,13 +283,12 @@ void SetMap(){            //map初始化
 			{
 				Map[i][j]=pass;
 			}
-		
-
 		}
 	}
 
 	return;
 }
+
 void SetEle(){                       //初始化电梯
 	e->elem=(int*)malloc(e->capacity*sizeof(int));
 	for(int j=1;j<=e->capacity;j++)  
@@ -308,7 +349,6 @@ void ElePosChange(){    //根据运行 方向改变电梯、人、楼层显示的位置
 			}
 			else
 				Map[e->current_pos-1][j]=pass;   //如果没站人，则需消除上次电梯 
-		
 		}
 	}
 	else          //电梯上升
@@ -329,35 +369,27 @@ void ElePosChange(){    //根据运行 方向改变电梯、人、楼层显示的位置
 	{
 		e->direction=!(e->direction);
 	}
-	/* 
-	if((GetFloor(i)==e->current_floor)&&(i%f->height!=0)&&(e->door_status==open)&&(j==e->capacity+1))     //控制电梯门的开关
-	{
-		Map[i][j]=pass;
-	}
-	*/ 
+
 	return;
 }
 
 void DefaultSim(){
 	system("cls");
-	if(!set_flag)
+	if(!set_flag)                //默认设置
 	{
 	printf("您还未进行设置，以下为默认设置的模拟\n"); 
 	e->capacity=7;
 	f->height=5;
 	f->num=5;
 	f->capacity=6;
-	e->current_pos=f->num*f->height;  //默认设置 
+	e->current_pos=f->num*f->height;   
 	}
 	EleRun();
-	/*
-	SetMap();
-	PeopleSim();          //随机生成等候人的楼层分布
-	PrintBuild();*/
 	system("pause");
 	MainMenu();
 	return;
 } 
+
 void Set(){
 	int choice;
 	system("cls");
